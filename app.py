@@ -78,7 +78,7 @@ def load_embedding_model():
 @st.cache_resource(show_spinner="Downloading & Loading AI Model... This only happens once!")
 def load_llm_pipeline():
     """Load and cache the local LLM pipeline."""
-    model_id = "google/flan-t5-large" # Upgraded to a smarter model (780M params)
+    model_id = "google/flan-t5-base" # Downgraded to Base (250MB) to prevent Cloud Crash
     # Using explicit 'cpu' if no CUDA to avoid half-loading states on weak GPUs
     device = 0 if torch.cuda.is_available() else -1
     
