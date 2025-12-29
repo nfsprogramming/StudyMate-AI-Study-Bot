@@ -19,26 +19,51 @@ st.set_page_config(
 # --- Custom CSS for Aesthetics ---
 st.markdown("""
     <style>
+    /* Global Font */
+    html, body, [class*="css"] {
+        font-family: 'Times New Roman', Times, serif;
+    }
+
+    /* Main Background */
     .stApp {
-        background-color: #0e1117;
-        color: #fafafa;
+        background-color: #000000;
+        color: #D4AF37; /* Gold */
     }
+
+    /* Input Fields */
     .stTextInput > div > div > input {
-        background-color: #262730;
-        color: #ffffff;
-        border-radius: 10px;
+        background-color: #0f0f0f;
+        color: #D4AF37;
+        border: 1px solid #D4AF37;
+        border-radius: 5px;
     }
+
+    /* Chat Messages */
     .stChatMessage {
-        background-color: #262730;
-        border-radius: 15px;
-        padding: 10px;
+        background-color: #0f0f0f;
+        border: 1px solid #996515; /* Darker Gold border */
+        border-radius: 10px;
+        padding: 15px;
         margin-bottom: 10px;
     }
+
+    /* Buttons */
     .stButton > button {
-        border-radius: 20px;
-        background-image: linear-gradient(to right, #4facfe 0%, #00f2fe 100%);
-        color: white;
-        border: none;
+        border-radius: 5px;
+        background: linear-gradient(to bottom, #FFD700 0%, #B8860B 100%);
+        color: #000000;
+        font-weight: bold;
+        border: 1px solid #FFD700;
+        font-family: 'Times New Roman', Times, serif;
+    }
+    
+    /* Headings and Markdown */
+    h1, h2, h3, h4, strong {
+        color: #FFD700 !important;
+    }
+    
+    .stMarkdown {
+        color: #F5DEB3 !important; /* Wheat color for smoother reading against black */
     }
     </style>
 """, unsafe_allow_html=True)
@@ -53,7 +78,7 @@ def load_embedding_model():
 @st.cache_resource(show_spinner="Downloading & Loading AI Model... This only happens once!")
 def load_llm_pipeline():
     """Load and cache the local LLM pipeline."""
-    model_id = "MBZUAI/LaMini-Flan-T5-248M"
+    model_id = "google/flan-t5-large" # Upgraded to a smarter model (780M params)
     # Using explicit 'cpu' if no CUDA to avoid half-loading states on weak GPUs
     device = 0 if torch.cuda.is_available() else -1
     
@@ -87,7 +112,7 @@ def extract_text_from_pdf(pdf_file):
             text += page_text
     return text
 
-def chunk_text(text, chunk_size=300, chunk_overlap=50): # Reduced chunk size for T5-limits
+def chunk_text(text, chunk_size=500, chunk_overlap=100): # Increased size for better context
     chunks = []
     start = 0
     while start < len(text):
@@ -104,7 +129,7 @@ class SimpleVectorStore:
         self.index = faiss.IndexFlatL2(self.dimension)
         self.index.add(embeddings)
 
-    def search(self, query_embedding, k=2): # Reduced k to fit context window
+    def search(self, query_embedding, k=3): # Increased k to retrieve more chunks
         distances, indices = self.index.search(np.array([query_embedding]), k)
         return [self.chunks[i] for i in indices[0]]
 
@@ -132,11 +157,6 @@ def main():
             st.rerun()
             
         st.markdown("---")
-        st.markdown("**Debug Info:**")
-        if torch.cuda.is_available():
-            st.success("🚀 GPU Detected & Enabled")
-        else:
-            st.info("🐢 Running on CPU")
 
     # Process Uploaded File
     if uploaded_file:
@@ -185,14 +205,21 @@ def main():
                     query_embedding = embedder.encode(user_question)
                     
                     # 2. Retrieve Context
-                    relevant_chunks = st.session_state.vector_store.search(query_embedding, k=2)
-                    context = "\n".join(relevant_chunks)
+                    relevant_chunks = st.session_state.vector_store.search(query_embedding, k=3)
+                    context = "\n\n".join(relevant_chunks)
                     
                     status_placeholder.markdown("🤖 Generating answer...")
                     
                     # 3. Generate with LLM
                     llm_pipe = load_llm_pipeline()
-                    prompt = f"Question: {user_question}\nContext: {context}\nAnswer:"
+                    
+                    # Improved Prompt
+                    prompt = f"""Use the following pieces of context to answer the question at the end.
+Context:
+{context}
+
+Question: {user_question}
+Answer:"""
                     
                     # Explicit generation call
                     output = llm_pipe(prompt, max_new_tokens=200, do_sample=True)
