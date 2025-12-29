@@ -19,8 +19,8 @@ st.set_page_config(
 # --- Custom CSS for Aesthetics ---
 st.markdown("""
     <style>
-    /* Global Font - Force Apply to Everything */
-    html, body, [class*="css"], .stApp, .stMarkdown, .stText, .stTitle, .stHeader, .stsubheader, .stSidebar, .stButton, .stTextInput, .stSelectbox, div[data-testid="stSidebar"] {
+    /* Global Font - Nuclear Option to Force Apply to EVERYTHING */
+    * {
         font-family: 'Courier New', Courier, monospace !important;
     }
 
