@@ -1,86 +1,212 @@
+
 import streamlit as st
 import os
 import PyPDF2
-from langchain.text_splitters import CharacterTextSplitter
-from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_community.vectorstores import FAISS
-import google.generativeai as genai
+import torch
+import numpy as np
+import faiss
+from sentence_transformers import SentenceTransformer
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, pipeline
 
-st.set_page_config(page_title="StudyMate with Gemini", layout="wide")
+# --- Page Config ---
+st.set_page_config(
+    page_title="StudyMate AI",
+    page_icon="📚",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
-# --- Sidebar for API key ---
-gemini_key = st.sidebar.text_input("🔑 Enter your Gemini API Key", type="password")
-if gemini_key:
-    genai.configure(api_key=gemini_key)
+# --- Custom CSS for Aesthetics ---
+st.markdown("""
+    <style>
+    .stApp {
+        background-color: #0e1117;
+        color: #fafafa;
+    }
+    .stTextInput > div > div > input {
+        background-color: #262730;
+        color: #ffffff;
+        border-radius: 10px;
+    }
+    .stChatMessage {
+        background-color: #262730;
+        border-radius: 15px;
+        padding: 10px;
+        margin-bottom: 10px;
+    }
+    .stButton > button {
+        border-radius: 20px;
+        background-image: linear-gradient(to right, #4facfe 0%, #00f2fe 100%);
+        color: white;
+        border: none;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
-uploaded_file = st.file_uploader("📄 Upload a PDF", type=["pdf"])
+# --- Caching Resources ---
 
-if uploaded_file and gemini_key:
-    # --- Extract text from PDF ---
-    pdf_reader = PyPDF2.PdfReader(uploaded_file)
-    raw_text = ""
+@st.cache_resource
+def load_embedding_model():
+    """Load and cache the embedding model."""
+    return SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+
+@st.cache_resource(show_spinner="Downloading & Loading AI Model... This only happens once!")
+def load_llm_pipeline():
+    """Load and cache the local LLM pipeline."""
+    model_id = "MBZUAI/LaMini-Flan-T5-248M"
+    # Using explicit 'cpu' if no CUDA to avoid half-loading states on weak GPUs
+    device = 0 if torch.cuda.is_available() else -1
+    
+    tokenizer = AutoTokenizer.from_pretrained(model_id)
+    model = AutoModelForSeq2SeqLM.from_pretrained(model_id)
+    
+    pipe = pipeline(
+        "text2text-generation",
+        model=model,
+        tokenizer=tokenizer,
+        device=device,
+        max_length=512,
+        truncation=True, # Ensure input is truncated to model max length
+        model_kwargs={
+            "temperature": 0.3,
+            "repetition_penalty": 1.5,
+            "no_repeat_ngram_size": 3,
+            "early_stopping": True
+        }
+    )
+    return pipe
+
+# --- Helper Functions ---
+
+def extract_text_from_pdf(pdf_file):
+    pdf_reader = PyPDF2.PdfReader(pdf_file)
+    text = ""
     for page in pdf_reader.pages:
-        text = page.extract_text()
-        if text:
-            raw_text += text
+        page_text = page.extract_text()
+        if page_text:
+            text += page_text
+    return text
 
-    if not raw_text.strip():
-        st.error("❌ No readable text found in the PDF. Please upload a text-based PDF.")
-    else:
-        # --- Split text into chunks ---
-        text_splitter = CharacterTextSplitter(
-            separator="\n",
-            chunk_size=1000,
-            chunk_overlap=200,
-            length_function=len
-        )
-        chunks = text_splitter.split_text(raw_text)
+def chunk_text(text, chunk_size=300, chunk_overlap=50): # Reduced chunk size for T5-limits
+    chunks = []
+    start = 0
+    while start < len(text):
+        end = start + chunk_size
+        chunk = text[start:end]
+        chunks.append(chunk)
+        start = end - chunk_overlap
+    return chunks
 
-        # --- Create embeddings and vectorstore ---
-        embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-        vectorstore = FAISS.from_texts(chunks, embeddings)
+class SimpleVectorStore:
+    def __init__(self, chunks, embeddings):
+        self.chunks = chunks
+        self.dimension = embeddings.shape[1]
+        self.index = faiss.IndexFlatL2(self.dimension)
+        self.index.add(embeddings)
 
-        if "chat_history" not in st.session_state:
+    def search(self, query_embedding, k=2): # Reduced k to fit context window
+        distances, indices = self.index.search(np.array([query_embedding]), k)
+        return [self.chunks[i] for i in indices[0]]
+
+# --- Main Application ---
+
+def main():
+    st.title("📚 StudyMate AI")
+    st.markdown("### Your Personal Offline Study Assistant")
+
+    # Initialize Session State
+    if "chat_history" not in st.session_state:
+        st.session_state.chat_history = []
+    if "vector_store" not in st.session_state:
+        st.session_state.vector_store = None
+    if "current_file" not in st.session_state:
+        st.session_state.current_file = None
+
+    # Sidebar
+    with st.sidebar:
+        st.header("📂 Document Center")
+        uploaded_file = st.file_uploader("Upload a PDF", type=["pdf"])
+        
+        if st.button("Clear Chat History", key="clear_chat"):
             st.session_state.chat_history = []
+            st.rerun()
+            
+        st.markdown("---")
+        st.markdown("**Debug Info:**")
+        if torch.cuda.is_available():
+            st.success("🚀 GPU Detected & Enabled")
+        else:
+            st.info("🐢 Running on CPU")
 
-        # --- User input ---
-        user_question = st.text_input("💬 Ask a question about your PDF:")
+    # Process Uploaded File
+    if uploaded_file:
+        if st.session_state.current_file != uploaded_file.name:
+            with st.spinner("🔄 Processing PDF... This runs once per file."):
+                # 1. Extract Text
+                raw_text = extract_text_from_pdf(uploaded_file)
+                
+                if not raw_text.strip():
+                    st.error("❌ No readable text found. Try another PDF.")
+                else:
+                    # 2. Chunk Text
+                    chunks = chunk_text(raw_text)
+                    
+                    # 3. Embed Text
+                    embedder = load_embedding_model()
+                    embeddings = embedder.encode(chunks)
+                    
+                    # 4. Create Vector Store
+                    st.session_state.vector_store = SimpleVectorStore(chunks, embeddings)
+                    st.session_state.current_file = uploaded_file.name
+                    st.session_state.chat_history = []
+                    st.success("✅ PDF Processed! Ready to chat.")
 
-        if user_question:
-            # Retrieve relevant chunks
-            docs = vectorstore.similarity_search(user_question, k=3)
-            context = " ".join([doc.page_content for doc in docs])
+    # Chat Interface
+    if st.session_state.vector_store:
+        # Display Chat History
+        for role, message in st.session_state.chat_history:
+            with st.chat_message(role):
+                st.markdown(message)
 
-            # --- Generate response using Gemini ---
-            prompt = f"""
-            You are StudyMate, an AI assistant that answers questions about a document.
-            Use the following context to answer clearly and accurately.
+        # User Input
+        if user_question := st.chat_input("Ask a question about your document..."):
+            st.session_state.chat_history.append(("user", user_question))
+            with st.chat_message("user"):
+                st.markdown(user_question)
 
-            Context:
-            {context}
+            # Generate Answer
+            with st.chat_message("assistant"):
+                status_placeholder = st.empty()
+                status_placeholder.markdown("🔍 Searching document...")
+                
+                try:
+                    # 1. Embed Query
+                    embedder = load_embedding_model()
+                    query_embedding = embedder.encode(user_question)
+                    
+                    # 2. Retrieve Context
+                    relevant_chunks = st.session_state.vector_store.search(query_embedding, k=2)
+                    context = "\n".join(relevant_chunks)
+                    
+                    status_placeholder.markdown("🤖 Generating answer...")
+                    
+                    # 3. Generate with LLM
+                    llm_pipe = load_llm_pipeline()
+                    prompt = f"Question: {user_question}\nContext: {context}\nAnswer:"
+                    
+                    # Explicit generation call
+                    output = llm_pipe(prompt, max_new_tokens=200, do_sample=True)
+                    response = output[0]['generated_text']
+                    
+                    status_placeholder.empty()
+                    st.markdown(response)
+                    st.session_state.chat_history.append(("assistant", response))
+                except Exception as e:
+                    status_placeholder.empty()
+                    st.error(f"Error during generation: {e}")
 
-            Question: {user_question}
+    elif not uploaded_file:
+        st.info("👈 Please upload a PDF to get started.")
 
-            Answer:
-            """
-
-            try:
-                model = genai.GenerativeModel("gemini-1.5-flash")  # You can switch to "gemini-1.5-pro"
-                response = model.generate_content(
-                    prompt,
-                    generation_config=genai.types.GenerationConfig(temperature=0.0)
-                )
-                answer_text = response.text
-            except Exception as e:
-                st.error(f"⚠️ Error generating response: {e}")
-                answer_text = ""
-
-            # --- Display chat history ---
-            if answer_text:
-                st.session_state.chat_history.append((user_question, answer_text))
-                for q, a in st.session_state.chat_history:
-                    st.markdown(f"**🧑 You:** {q}")
-                    st.markdown(f"**🤖 StudyMate:** {a}")
-
-else:
-    st.info("👆 Upload a PDF and enter your Gemini API key to begin.")
+if __name__ == "__main__":
+    main()
