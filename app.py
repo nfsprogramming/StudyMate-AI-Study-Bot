@@ -19,9 +19,9 @@ st.set_page_config(
 # --- Custom CSS for Aesthetics ---
 st.markdown("""
     <style>
-    /* Global Font */
-    html, body, [class*="css"] {
-        font-family: 'Times New Roman', Times, serif;
+    /* Global Font - Force Apply to Everything */
+    html, body, [class*="css"], .stApp, .stMarkdown, .stText, .stTitle, .stHeader, .stsubheader, .stSidebar, .stButton, .stTextInput, .stSelectbox, div[data-testid="stSidebar"] {
+        font-family: 'Courier New', Courier, monospace !important;
     }
 
     /* Main Background */
@@ -54,7 +54,7 @@ st.markdown("""
         color: #000000;
         font-weight: bold;
         border: 1px solid #FFD700;
-        font-family: 'Times New Roman', Times, serif;
+        font-family: 'Courier New', Courier, monospace !important;
     }
     
     /* Headings and Markdown */
