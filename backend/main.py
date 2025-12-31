@@ -14,14 +14,17 @@ import os
 import requests
 import json
 import re
-from google_classroom import GoogleClassroomIntegration
+try:
+    from google_classroom import GoogleClassroomIntegration
+except ImportError:
+    from backend.google_classroom import GoogleClassroomIntegration
 
 app = FastAPI(title="StudyMate AI Pro API", version="2.0.0")
 
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5173"],
+    allow_origins=["*"],  # Allow all origins for easier deployment, or specify your vercel domain
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
