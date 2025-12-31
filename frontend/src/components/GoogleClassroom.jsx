@@ -114,51 +114,38 @@ export default function GoogleClassroom() {
                     <div className="info-card">
                         {hasCredentials ? (
                             <>
-                                <h3>🎓 Ready to Connect!</h3>
-                                <p style={{ color: '#10b981', fontSize: '16px', marginBottom: '24px' }}>
-                                    ✅ Google Classroom credentials detected
+                                <div style={{ fontSize: '48px', marginBottom: '16px' }}>🏫</div>
+                                <h3>Connect Your Classroom</h3>
+                                <p style={{ color: '#94a3b8', fontSize: '16px', marginBottom: '32px' }}>
+                                    Link your Google Classroom account to import study materials and post AI quizzes for your students.
                                 </p>
 
-                                <div style={{ textAlign: 'left', margin: '24px 0' }}>
-                                    <h4 style={{ color: '#60a5fa', marginBottom: '12px' }}>✨ What you can do:</h4>
-                                    <ul>
-                                        <li>✅ View your courses</li>
-                                        <li>✅ Access course materials</li>
-                                        <li>✅ Post AI-generated quizzes</li>
-                                        <li>✅ View assignments</li>
-                                    </ul>
-                                </div>
-
-                                <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '32px' }}>
+                                <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '32px' }}>
                                     <button
                                         className="auth-button"
                                         onClick={authenticate}
                                         disabled={loading}
                                         style={{
-                                            background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                                            fontSize: '16px',
-                                            padding: '16px 32px'
+                                            background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                                            fontSize: '18px',
+                                            padding: '16px 40px',
+                                            fontWeight: '600'
                                         }}
                                     >
-                                        <FiCheckCircle /> {loading ? 'Connecting...' : 'Connect to Google Classroom'}
+                                        <FiCheckCircle /> {loading ? 'Opening Login...' : 'Sign in with Google'}
                                     </button>
 
                                     <button
                                         className="auth-button"
                                         onClick={enableDemoMode}
+                                        style={{ background: 'transparent', border: '1px solid #4b5563' }}
                                     >
-                                        <FiExternalLink /> Try Demo Mode
+                                        <FiExternalLink /> Try Demo
                                     </button>
                                 </div>
 
-                                <p style={{
-                                    marginTop: '24px',
-                                    color: '#94a3b8',
-                                    fontSize: '14px',
-                                    cursor: 'pointer',
-                                    textDecoration: 'underline'
-                                }} onClick={() => setShowSetupGuide(!showSetupGuide)}>
-                                    {showSetupGuide ? '▼ Hide' : '▶'} Setup Information
+                                <p style={{ marginTop: '24px', color: '#64748b', fontSize: '13px' }}>
+                                    Secure connection via Google OAuth 2.0
                                 </p>
                             </>
                         ) : (
@@ -166,15 +153,12 @@ export default function GoogleClassroom() {
                                 <h3>📚 Google Classroom Setup Required</h3>
                                 <p>To use Google Classroom integration, you need to set up OAuth credentials:</p>
 
-                                <div style={{ textAlign: 'left', margin: '24px 0' }}>
-                                    <h4 style={{ color: '#fbbf24', marginBottom: '12px' }}>🔧 Setup Steps:</h4>
-                                    <ol style={{ color: '#94a3b8', paddingLeft: '20px' }}>
-                                        <li style={{ marginBottom: '8px' }}>Go to <a href="https://console.cloud.google.com" target="_blank" rel="noopener noreferrer" style={{ color: '#60a5fa' }}>Google Cloud Console</a></li>
-                                        <li style={{ marginBottom: '8px' }}>Create a new project or select existing</li>
-                                        <li style={{ marginBottom: '8px' }}>Enable Google Classroom API</li>
-                                        <li style={{ marginBottom: '8px' }}>Create OAuth 2.0 credentials</li>
-                                        <li style={{ marginBottom: '8px' }}>Download credentials.json</li>
-                                        <li style={{ marginBottom: '8px' }}>Place in project root directory</li>
+                                <div style={{ textAlign: 'left', margin: '24px 0', background: 'rgba(239, 68, 68, 0.1)', padding: '20px', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                                    <h4 style={{ color: '#f87171', marginBottom: '12px' }}>🛠️ Developer Action Required</h4>
+                                    <p style={{ fontSize: '14px', color: '#94a3b8', marginBottom: '16px' }}>The backend is not yet configured with Google API credentials.</p>
+                                    <ol style={{ color: '#94a3b8', paddingLeft: '20px', fontSize: '13px' }}>
+                                        <li style={{ marginBottom: '6px' }}>Create an OAuth client in Google Cloud Console</li>
+                                        <li style={{ marginBottom: '6px' }}>Set it as <code style={{ color: '#f87171' }}>GOOGLE_CREDENTIALS</code> environment variable</li>
                                     </ol>
                                 </div>
 
@@ -240,9 +224,9 @@ export default function GoogleClassroom() {
                         )}
 
                         {!hasCredentials && (
-                            <p className="note" style={{ marginTop: '20px' }}>
+                            <p className="note" style={{ marginTop: '20px', color: '#64748b' }}>
                                 <FiAlertCircle style={{ display: 'inline', marginRight: '8px' }} />
-                                OAuth credentials are required for production use. Use Demo Mode to test the interface.
+                                Once configured by the administrator, users will see a simple login button.
                             </p>
                         )}
                     </div>

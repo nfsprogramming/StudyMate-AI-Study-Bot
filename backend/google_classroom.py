@@ -40,29 +40,43 @@ class GoogleClassroomIntegration:
         """Authenticate with Google Classroom API"""
         # Get the directory where this script is located (backend folder)
         backend_dir = os.path.dirname(os.path.abspath(__file__))
-        credentials_path = os.path.join(backend_dir, 'credentials.json')
         token_path = os.path.join(backend_dir, 'token.pickle')
         
-        # Token file stores user's access and refresh tokens
+        # 1. Try to load from environment variable (Best for production)
+        env_creds_json = os.environ.get('GOOGLE_CREDENTIALS')
+        
+        # 2. Try to load existing token (User already logged in)
         if os.path.exists(token_path):
             with open(token_path, 'rb') as token:
                 self.creds = pickle.load(token)
         
-        # If no valid credentials, let user log in
+        # 3. If no valid credentials, let user log in
         if not self.creds or not self.creds.valid:
             if self.creds and self.creds.expired and self.creds.refresh_token:
                 self.creds.refresh(Request())
             else:
-                if not os.path.exists(credentials_path):
-                    return False, f"credentials.json not found. Please place it in the backend folder."
+                # Use environment variable if available, otherwise look for file
+                if env_creds_json:
+                    try:
+                        creds_dict = json.loads(env_creds_json)
+                        flow = InstalledAppFlow.from_client_config(creds_dict, SCOPES)
+                    except Exception as e:
+                        return False, f"Error parsing GOOGLE_CREDENTIALS env var: {str(e)}"
+                else:
+                    credentials_path = os.path.join(backend_dir, 'credentials.json')
+                    if not os.path.exists(credentials_path):
+                        return False, "Google Classroom not configured. Developer setup required."
+                    flow = InstalledAppFlow.from_client_secrets_file(credentials_path, SCOPES)
                 
-                flow = InstalledAppFlow.from_client_secrets_file(
-                    credentials_path, SCOPES)
-                self.creds = flow.run_local_server(port=0)
+                # Use a specific port for local server or host-based flow
+                self.creds = flow.run_local_server(port=0, access_type='offline')
             
-            # Save credentials for next run
-            with open(token_path, 'wb') as token:
-                pickle.dump(self.creds, token)
+            # Save credentials for next run (if possible)
+            try:
+                with open(token_path, 'wb') as token:
+                    pickle.dump(self.creds, token)
+            except:
+                pass # Might fail on read-only filesystems
         
         try:
             self.service = build('classroom', 'v1', credentials=self.creds)

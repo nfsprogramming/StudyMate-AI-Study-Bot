@@ -321,13 +321,14 @@ async def get_classroom_status():
     """Check if Google Classroom is authenticated"""
     try:
         backend_dir = os.path.dirname(os.path.abspath(__file__))
-        has_credentials = os.path.exists(os.path.join(backend_dir, "credentials.json"))
+        has_credentials_file = os.path.exists(os.path.join(backend_dir, "credentials.json"))
+        has_credentials_env = os.environ.get('GOOGLE_CREDENTIALS') is not None
         has_token = os.path.exists(os.path.join(backend_dir, "token.pickle"))
         
         classroom = get_classroom()
         return {
             "authenticated": classroom.is_authenticated if classroom else False,
-            "has_credentials": has_credentials,
+            "has_credentials": has_credentials_file or has_credentials_env,
             "has_token": has_token
         }
     except Exception:
