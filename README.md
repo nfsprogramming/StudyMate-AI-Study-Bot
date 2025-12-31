@@ -1,50 +1,60 @@
-# StudyMate AI - Offline Study Assistant
+# StudyMate AI PRO - Your AI-Powered Study Assistant
 
-StudyMate AI is a local, privacy-focused study assistant that allows you to chat with your PDF documents without needing an internet connection (after initial model download) or third-party API keys.
+StudyMate AI PRO is a powerful, full-stack AI-driven study assistant built with **FastAPI** and **React**. It helps you learn from your PDF documents, generate quizzes, and integrate with Google Classroom.
 
-## Features
+## 🚀 Features
 
-- **Offline Capability**: Uses local AI models (`MBZUAI/LaMini-Flan-T5-248M` and `all-MiniLM-L6-v2`) for generating answers and embeddings.
-- **Privacy First**: Your documents and questions never leave your machine.
-- **PDF Support**: Extract text, vectorize, and query any PDF document.
-- **Chat History**: Keeps track of your conversation context.
-- **Optimized UI**: Clean, dark-themed interface for focused studying.
+- ✅ **AI-Powered Chat** - Ask questions about your PDF documents.
+- 🎮 **AI Quiz Generation** - Automatically generate multiple-choice questions from your study materials.
+- 🎓 **Google Classroom Integration** - Connect to your classes, import materials, and post generated quizzes.
+- � **PDF Import** - Directly import materials from Google Classroom as PDFs.
+- 🌍 **Multi-language Support** - Communicate and generate quizzes in 15 different languages.
+- 🎨 **Modern UI** - Sleek Black, Red, and White premium theme.
+- 📊 **Progressive Uploads** - Real-time progress tracking for PDF uploads.
 
-## Installation
+## �️ Tech Stack
 
-1. **Clone the repository** (if you haven't already):
-   ```bash
-   git clone <repository_url>
-   cd StudyMate-AI-Study-Bot
-   ```
+- **Backend:** FastAPI (Python)
+- **Frontend:** React (Vite)
+- **AI API:** Pollinations AI (Free & Fast)
+- **PDF Processing:** PyPDF2
+- **LMS:** Google Classroom API & Drive API
 
-2. **Install Dependencies**:
-   It is recommended to use a virtual environment.
-   ```bash
-   pip install -r requirements.txt
-   ```
+## 📋 Installation & Setup
 
-   *Note: PyTorch will be installed. If you have a dedicated GPU (NVIDIA), ensure you have the correct CUDA version enabled or install the specific Torch version from [pytorch.org](https://pytorch.org/). By default, it will run on CPU or what `accelerate` detects.*
+### 1. Prerequisite
+- Python 3.10+
+- Node.js & npm
 
-## Usage
+### 2. Backend Setup
+```bash
+cd backend
+pip install -r ../requirements.txt
+python main.py
+```
+*Note: Place your `credentials.json` in the `backend/` folder for Google Classroom features.*
 
-1. **Run the Application**:
-   ```bash
-   streamlit run app.py
-   ```
+### 3. Frontend Setup
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-2. **Upload a PDF**: Use the sidebar to upload your study material.
-3. **Wait for Processing**: The app will process the PDF (this happens once per file).
-4. **Chat**: Ask questions about the content of the PDF.
+## 🎮 How to Use
 
-## Troubleshooting
+1. **Upload PDFs**: Drag and drop your study materials or import them from Google Classroom.
+2. **Chat with AI**: Ask specific questions about the content of your PDFs.
+3. **Generate Quizzes**: Click the Quiz tab to create custom tests based on your documents.
+4. **Classroom Sync**: Link your Google Classroom to keep all your study materials in one place.
 
-- **First Run Slowness**: The first time you run the app or process a file, it needs to download the AI models from Hugging Face. This depends on your internet speed. Subsequent runs will be much faster as models are cached.
-- **Memory Issues**: If you encounter memory errors, try processing smaller PDFs or ensures no other heavy applications are running. The selected model (LaMini-Flan-T5-248M) is lightweight (~250M params) and should run on most modern systems.
+## � Privacy & Security
 
-## Tech Stack
+- PDFs are processed and stored in-memory during the session.
+- Authentication is handled securely via Google OAuth 2.0.
+- All AI processing is done via prompt engineering with context truncation for efficiency.
 
-- **Streamlit**: Frontend UI.
-- **LangChain**: LLM framework and RAG (Retrieval-Augmented Generation) logical.
-- **FAISS**: Vector database for fast similarity search.
-- **Hugging Face Transformers**: Local model inference.
+---
+
+**Made with ❤️ for learners everywhere**
+**Version:** 2.2.0 | **Build:** December 2025
