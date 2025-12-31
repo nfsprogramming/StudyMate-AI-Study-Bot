@@ -1,11 +1,11 @@
 {
     "rewrites": [
         {
-            "source": "/api/(.*)",
-            "destination": "https://studymate-ai-backend.onrender.com/api/$1"
+            "source": "/api/:path*",
+            "destination": "https://studymate-ai-study-bot-1.onrender.com/api/:path*"
         },
         {
-            "source": "/(?!api/)(.*)",
+            "source": "/(.*)",
             "destination": "/index.html"
         }
     ]
