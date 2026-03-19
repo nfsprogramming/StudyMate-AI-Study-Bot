@@ -124,6 +124,25 @@ function App() {
                     >
                         <FiGlobe /> Classroom
                     </button>
+
+                    {activeTab === 'chat' && (
+                        <div className="tab-actions">
+                            <button
+                                className="secondary-button"
+                                onClick={exportChatHistory}
+                                disabled={chatHistory.length === 0}
+                            >
+                                <FiDownload /> Export Chat
+                            </button>
+                            <button
+                                className="secondary-button danger"
+                                onClick={clearChatHistory}
+                                disabled={chatHistory.length === 0}
+                            >
+                                <FiTrash2 /> Clear Chat
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 {/* Content Area */}
