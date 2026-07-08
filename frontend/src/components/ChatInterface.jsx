@@ -269,7 +269,8 @@ export default function ChatInterface({ onMessageAdd, initialMessages = [] }) {
             
             setMessages(prev => [...prev, initialAiMessage])
 
-            const response = await fetch('/api/ask', {
+            const apiUrl = import.meta.env.VITE_API_URL || '';
+            const response = await fetch(`${apiUrl}/api/ask`, {
                 method: 'POST',
                 signal: controller.signal,
                 headers: {
